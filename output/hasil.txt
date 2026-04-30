@@ -1,0 +1,4 @@
+Akurasi: 1.0
+Confusion Matrix:
+[[1 0]
+ [0 1]]
