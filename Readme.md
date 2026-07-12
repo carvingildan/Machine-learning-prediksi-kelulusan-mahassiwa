@@ -9,7 +9,8 @@
 
 **Capstone Project — UAS Pembelajaran Mesin 2025/2026**  
 Universitas Dian Nuswantoro · Teknik Informatika  
-**Mahasiswa:** Carvin Gildan
+**Mahasiswa:** Carvin Gildan Sirajudin
+**NIM:** A11.2024.15822 
 
 </div>
 
@@ -144,7 +145,7 @@ Buka browser: **http://localhost:8501**
 ## 🛠️ Teknologi
 
 ```
-Python 3.14        Pandas          NumPy
+Python 3.11        Pandas          NumPy
 Scikit-learn       Streamlit       Plotly
 Matplotlib         Seaborn         SHAP
 imbalanced-learn   Joblib
