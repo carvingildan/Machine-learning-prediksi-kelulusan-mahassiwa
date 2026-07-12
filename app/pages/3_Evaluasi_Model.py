@@ -4,8 +4,19 @@ import numpy as np
 import joblib
 import plotly.graph_objects as go
 import plotly.express as px
+import os
 from sklearn.metrics import (confusion_matrix, roc_curve, roc_auc_score,
     accuracy_score, precision_score, recall_score, f1_score, classification_report)
+
+
+def find_path(filenames):
+    prefixes = ["", "../", "../../"]
+    for name in filenames:
+        for prefix in prefixes:
+            full = prefix + name
+            if os.path.exists(full):
+                return full
+    return None
 
 st.set_page_config(page_title="Evaluasi Model", page_icon="📈", layout="wide")
 
@@ -21,11 +32,19 @@ with st.sidebar:
 
 @st.cache_resource
 def load_all():
-    lr   = joblib.load("../models/logistic_regression.pkl")
-    rf   = joblib.load("../models/best_model.pkl")
-    X    = pd.read_csv("../data/processed/X_test.csv")
-    y    = pd.read_csv("../data/processed/y_test.csv").squeeze()
-    info = joblib.load("../models/feature_info.pkl")
+    lr_path    = find_path(["models/logistic_regression.pkl"])
+    rf_path    = find_path(["models/best_model.pkl"])
+    xtest_path = find_path(["data/processed/X_test.csv"])
+    ytest_path = find_path(["data/processed/y_test.csv"])
+    info_path  = find_path(["models/feature_info.pkl"])
+    if not all([lr_path, rf_path, xtest_path, ytest_path, info_path]):
+        st.error("❌ Model/data tidak ditemukan! Jalankan src/main.py dulu.")
+        st.stop()
+    lr   = joblib.load(lr_path)
+    rf   = joblib.load(rf_path)
+    X    = pd.read_csv(xtest_path)
+    y    = pd.read_csv(ytest_path).squeeze()
+    info = joblib.load(info_path)
     return lr, rf, X, y, info
 
 model_lr, model_rf, X_test, y_test, feat_info = load_all()

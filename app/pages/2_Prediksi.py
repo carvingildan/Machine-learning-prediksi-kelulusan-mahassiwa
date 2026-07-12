@@ -3,6 +3,17 @@ import pandas as pd
 import numpy as np
 import joblib
 import plotly.graph_objects as go
+import os
+
+
+def find_path(filenames):
+    prefixes = ["", "../", "../../"]
+    for name in filenames:
+        for prefix in prefixes:
+            full = prefix + name
+            if os.path.exists(full):
+                return full
+    return None
 
 st.set_page_config(page_title="Prediksi", page_icon="🤖", layout="wide")
 
@@ -18,9 +29,15 @@ with st.sidebar:
 
 @st.cache_resource
 def load_model():
-    lr  = joblib.load("../models/logistic_regression.pkl")
-    rf  = joblib.load("../models/best_model.pkl")
-    info = joblib.load("../models/feature_info.pkl")
+    lr_path   = find_path(["models/logistic_regression.pkl"])
+    rf_path   = find_path(["models/best_model.pkl"])
+    info_path = find_path(["models/feature_info.pkl"])
+    if not lr_path or not rf_path or not info_path:
+        st.error("❌ Model tidak ditemukan! Jalankan src/main.py dulu.")
+        st.stop()
+    lr   = joblib.load(lr_path)
+    rf   = joblib.load(rf_path)
+    info = joblib.load(info_path)
     return lr, rf, info
 
 model_lr, model_rf, feat_info = load_model()

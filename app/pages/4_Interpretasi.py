@@ -190,7 +190,8 @@ with tab3:
     c1, c2 = st.columns([1, 2])
     with c1:
         st.markdown("**Data Mahasiswa:**")
-        st.dataframe(row.T.rename(columns={row.index[0]:"Nilai"}), use_container_width=True)
+        row_display = row.T.rename(columns={row.index[0]: "Nilai"}).astype(str)
+        st.dataframe(row_display, use_container_width=True)
         if pred == 1:
             st.success(f"✅ Prediksi: **Tepat Waktu** ({proba[1]*100:.1f}%)")
         else:
