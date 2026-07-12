@@ -1,4 +1,32 @@
-Akurasi: 1.0
-Confusion Matrix:
-[[1 0]
- [0 1]]
+============================================================
+  LAPORAN PREDIKSI KELULUSAN MAHASISWA
+============================================================
+
+Model Terpilih    : Logistic Regression
+Akurasi           : 0.9150 (91.50%)
+
+Perbandingan Semua Model:
+------------------------------------------------------------
+              Model  Accuracy  Precision  Recall  F1-Score  ROC-AUC  CV-Accuracy(5fold)
+Logistic Regression     0.915     0.9209  0.9819    0.9504   0.9438              0.9025
+                SVM     0.890     0.8956  0.9819    0.9368   0.9203              0.8962
+      Random Forest     0.865     0.8601  1.0000    0.9248   0.9252              0.8650
+      Decision Tree     0.860     0.9207  0.9096    0.9152   0.8231              0.8288
+
+Confusion Matrix (Logistic Regression):
+------------------------------------------------------------
+              Prediksi
+               Terlambat  Tepat Waktu
+Aktual Terlambat       20           14
+       Tepat Waktu      3          163
+
+Classification Report:
+------------------------------------------------------------
+              precision    recall  f1-score   support
+
+   Terlambat       0.87      0.59      0.70        34
+ Tepat Waktu       0.92      0.98      0.95       166
+
+    accuracy                           0.92       200
+   macro avg       0.90      0.79      0.83       200
+weighted avg       0.91      0.92      0.91       200

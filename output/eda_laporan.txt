@@ -1,0 +1,33 @@
+============================================================
+  LAPORAN EDA — PREDIKSI KELULUSAN MAHASISWA
+============================================================
+
+Jumlah data   : 1000 baris
+Jumlah fitur  : 11
+Missing value : 0
+
+Distribusi Target:
+lulus_tepat_waktu
+Tepat Waktu    830
+Terlambat      170
+
+Statistik Deskriptif:
+           ipk      sks  kehadiran  nilai_rata  jumlah_cuti  jumlah_mengulang  lama_studi_semester
+count  1000.00  1000.00    1000.00     1000.00      1000.00           1000.00              1000.00
+mean      3.01   120.63      84.77       77.84         0.30              0.97                 7.62
+std       0.43    23.70       9.24        8.19         0.53              0.92                 1.40
+min       1.54    46.00      54.80       54.60         0.00              0.00                 6.00
+25%       2.71   104.00      78.50       72.10         0.00              0.00                 6.00
+50%       3.01   121.00      85.00       78.00         0.00              1.00                 7.00
+75%       3.29   138.00      91.62       83.32         1.00              1.00                 9.00
+max       4.00   160.00     100.00      100.00         3.00              5.00                13.00
+
+Korelasi dengan Target:
+lulus_tepat_waktu      1.000
+ipk                    0.272
+sks                    0.213
+kehadiran              0.140
+nilai_rata             0.055
+jumlah_cuti           -0.213
+jumlah_mengulang      -0.285
+lama_studi_semester   -0.303
