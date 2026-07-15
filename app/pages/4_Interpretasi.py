@@ -60,25 +60,20 @@ def get_shap_values():
     all_cols = NUM + list(ohe_cols)
     X_df     = pd.DataFrame(X_tr, columns=all_cols)
 
+    # Menggunakan Explainer generik yang aman untuk Logistic Regression maupun Tree
     explainer   = shap.Explainer(rf_model, X_df)
     shap_values = explainer(X_df)
 
-    # Fix: handle berbagai format output SHAP
-    if isinstance(shap_values, list):
-        # Format lama: list [kelas_0, kelas_1]
-        sv = np.array(shap_values[1])
-    elif hasattr(shap_values, 'values'):
-        # Format baru: ShapValues object
+    # Mengambil matriks nilai SHAP langsung dari objek Explanation
+    if hasattr(shap_values, "values"):
         sv = shap_values.values
-        if sv.ndim == 3:
-            sv = sv[:, :, 1]  # ambil kelas positif
     else:
         sv = np.array(shap_values)
-        if sv.ndim == 3:
-            sv = sv[:, :, 1]
 
-    # Pastikan 2D: (n_samples, n_features)
-    if sv.ndim == 1:
+    # Jika outputnya 3 dimensi (multiclass), ambil kelas positif (indeks 1)
+    if sv.ndim == 3:
+        sv = sv[:, :, 1]
+    elif sv.ndim == 1:
         sv = sv.reshape(1, -1)
 
     return sv, X_df, all_cols
@@ -161,27 +156,25 @@ with tab3:
     all_cols_full = NUM + list(ohe_cols)
     X_df_row = pd.DataFrame(X_tr_row, columns=all_cols_full)
 
+    # Baris awal di dalam tab3 tetap sama sampai bagian penyiapan data...
+    # Baris awal di dalam tab3 tetap sama sampai bagian penyiapan data...
     explainer = shap.Explainer(rf_model, X_df_row)
     sv_row    = explainer(X_df_row)
-    # Fix: ambil nilai SHAP untuk kelas positif (1D array)
-    if isinstance(sv_row, list):
-        sv_single = np.array(sv_row[1]).flatten()
-    elif hasattr(sv_row, 'values'):
+
+    # Ambil nilai array secara aman dari objek Explanation
+    if hasattr(sv_row, "values"):
         sv_arr = sv_row.values
-        if sv_arr.ndim == 3:
-            sv_single = sv_arr[0, :, 1]
-        elif sv_arr.ndim == 2:
-            sv_single = sv_arr[0]
-        else:
-            sv_single = sv_arr.flatten()
     else:
         sv_arr = np.array(sv_row)
-        if sv_arr.ndim == 3:
-            sv_single = sv_arr[0, :, 1]
-        elif sv_arr.ndim == 2:
-            sv_single = sv_arr[0]
-        else:
-            sv_single = sv_arr.flatten()
+
+    # Format dimensi array menjadi 1D untuk grafik individual
+    if sv_arr.ndim == 3:
+        sv_single = sv_arr[0, :, 1]
+    elif sv_arr.ndim == 2:
+        sv_single = sv_arr[0]
+    else:
+        sv_single = sv_arr.flatten()
+  
 
     pred  = model_rf.predict(row)[0]
     proba = model_rf.predict_proba(row)[0]
