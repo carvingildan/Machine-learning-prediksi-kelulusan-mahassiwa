@@ -161,7 +161,7 @@ with tab3:
     all_cols_full = NUM + list(ohe_cols)
     X_df_row = pd.DataFrame(X_tr_row, columns=all_cols_full)
 
-    explainer = shap.Explainer(rf_model, X_df)
+    explainer = shap.Explainer(rf_model, X_df_row)
     sv_row    = explainer(X_df_row)
     # Fix: ambil nilai SHAP untuk kelas positif (1D array)
     if isinstance(sv_row, list):
