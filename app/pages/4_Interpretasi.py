@@ -60,8 +60,8 @@ def get_shap_values():
     all_cols = NUM + list(ohe_cols)
     X_df     = pd.DataFrame(X_tr, columns=all_cols)
 
-    explainer   = shap.TreeExplainer(rf_model)
-    shap_values = explainer.shap_values(X_df)
+    explainer   = shap.Explainer(rf_model, X_df)
+    shap_values = explainer(X_df)
 
     # Fix: handle berbagai format output SHAP
     if isinstance(shap_values, list):
@@ -161,9 +161,8 @@ with tab3:
     all_cols_full = NUM + list(ohe_cols)
     X_df_row = pd.DataFrame(X_tr_row, columns=all_cols_full)
 
-    explainer = shap.TreeExplainer(rf_model)
-    sv_row    = explainer.shap_values(X_df_row)
-
+    explainer = shap.Explainer(rf_model, X_df)
+    sv_row    = explainer(X_df_row)
     # Fix: ambil nilai SHAP untuk kelas positif (1D array)
     if isinstance(sv_row, list):
         sv_single = np.array(sv_row[1]).flatten()
