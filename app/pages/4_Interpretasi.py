@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
-import shap
 import plotly.graph_objects as go
 import matplotlib
 matplotlib.use("Agg")
@@ -22,7 +21,7 @@ with st.sidebar:
     st.page_link("pages/5_Dokumentasi.py",    label="📋 Dokumentasi")
 
 def find_path(filenames):
-    prefixes = ["", "../", "../../"]
+    prefixes = ["", "../", "../../", "/mount/src/machine-learning-prediksi-kelulusan-mahassiwa/"]
     for name in filenames:
         for prefix in prefixes:
             full = prefix + name
@@ -36,8 +35,9 @@ def load_all():
     info_path  = find_path(["models/feature_info.pkl"])
     xtest_path = find_path(["data/processed/X_test.csv"])
     if not model_path:
-        st.error("❌ Model tidak ditemukan! Jalankan src/main.py dulu.")
+        st.error("❌ Model tidak ditemukan!")
         st.stop()
+    import joblib
     rf   = joblib.load(model_path)
     info = joblib.load(info_path)
     X    = pd.read_csv(xtest_path)
@@ -53,6 +53,7 @@ st.markdown("SHAP (SHapley Additive exPlanations) menjelaskan **pengaruh setiap 
 
 @st.cache_data
 def get_shap_values():
+    import shap
     prep     = model_rf.named_steps["prep"]
     rf_model = model_rf.named_steps["model"]
     X_tr     = prep.transform(X_test[FEATURES])
@@ -60,35 +61,68 @@ def get_shap_values():
     all_cols = NUM + list(ohe_cols)
     X_df     = pd.DataFrame(X_tr, columns=all_cols)
 
-    # Menggunakan Explainer generik yang aman untuk Logistic Regression maupun Tree
-    explainer   = shap.Explainer(rf_model, X_df)
-    shap_values = explainer(X_df)
+    explainer = shap.TreeExplainer(rf_model)
 
-    # Mengambil matriks nilai SHAP langsung dari objek Explanation
-    if hasattr(shap_values, "values"):
+    # ── Fix: gunakan check_additivity=False untuk kompatibilitas SHAP terbaru ──
+    try:
+        shap_values = explainer.shap_values(X_df, check_additivity=False)
+    except TypeError:
+        shap_values = explainer.shap_values(X_df)
+
+    # Handle berbagai format output SHAP
+    if isinstance(shap_values, list):
+        sv = np.array(shap_values[1])
+    elif hasattr(shap_values, 'values'):
         sv = shap_values.values
+        if sv.ndim == 3:
+            sv = sv[:, :, 1]
     else:
         sv = np.array(shap_values)
+        if sv.ndim == 3:
+            sv = sv[:, :, 1]
 
-    # Jika outputnya 3 dimensi (multiclass), ambil kelas positif (indeks 1)
-    if sv.ndim == 3:
-        sv = sv[:, :, 1]
-    elif sv.ndim == 1:
+    if sv.ndim == 1:
         sv = sv.reshape(1, -1)
 
     return sv, X_df, all_cols
 
 with st.spinner("⏳ Menghitung SHAP values..."):
-    shap_vals, X_proc, all_cols = get_shap_values()
+    try:
+        shap_vals, X_proc, all_cols = get_shap_values()
+        shap_ok = True
+    except Exception as e:
+        shap_ok = False
+        shap_error = str(e)
+
+if not shap_ok:
+    st.warning(f"⚠️ SHAP tidak dapat dihitung: {shap_error}")
+    st.info("Menampilkan Feature Importance dari Random Forest sebagai alternatif.")
+
+    # Fallback: tampilkan feature importance dari model langsung
+    prep     = model_rf.named_steps["prep"]
+    rf_model = model_rf.named_steps["model"]
+    ohe_cols = prep.named_transformers_["cat"].get_feature_names_out(CAT)
+    all_cols = NUM + list(ohe_cols)
+    importances = rf_model.feature_importances_
+    fi_df = pd.DataFrame({"Fitur": all_cols, "Importance": importances})
+    fi_df = fi_df.sort_values("Importance", ascending=True).tail(12)
+
+    fig = go.Figure(go.Bar(
+        x=fi_df["Importance"], y=fi_df["Fitur"],
+        orientation="h", marker_color="#2E74B5",
+        text=fi_df["Importance"].round(4), textposition="outside"
+    ))
+    fig.update_layout(title="Feature Importance — Random Forest", height=480,
+                      xaxis_title="Importance Score")
+    st.plotly_chart(fig, use_container_width=True)
+    st.stop()
 
 tab1, tab2, tab3 = st.tabs(["📊 Feature Importance","🌊 SHAP Beeswarm","🔎 Prediksi Individual"])
 
-# ── TAB 1: Feature Importance ────────────────────────────
+# ── TAB 1: Feature Importance SHAP ───────────────────────
 with tab1:
-    st.markdown("#### 📊 SHAP Feature Importance")
+    st.markdown("#### 📊 SHAP Feature Importance (Mean |SHAP value|)")
     mean_shap = np.abs(shap_vals).mean(axis=0)
-
-    # Pastikan 1D
     if mean_shap.ndim > 1:
         mean_shap = mean_shap.flatten()
 
@@ -118,12 +152,12 @@ with tab1:
 with tab2:
     st.markdown("#### 🌊 SHAP Beeswarm Plot")
     st.markdown("Setiap titik = satu mahasiswa. **Merah** = nilai fitur tinggi, **Biru** = rendah.")
-    top_n = st.slider("Top N fitur:", 5, min(15, len(all_cols)), 10)
 
+    import shap
+    top_n = st.slider("Top N fitur:", 5, min(15, len(all_cols)), 10)
     mean_abs = np.abs(shap_vals).mean(axis=0)
     if mean_abs.ndim > 1:
         mean_abs = mean_abs.flatten()
-
     top_idx  = np.argsort(mean_abs)[-top_n:]
     sv_top   = shap_vals[:, top_idx]
     X_top    = X_proc.iloc[:, top_idx]
@@ -156,25 +190,21 @@ with tab3:
     all_cols_full = NUM + list(ohe_cols)
     X_df_row = pd.DataFrame(X_tr_row, columns=all_cols_full)
 
-    # Baris awal di dalam tab3 tetap sama sampai bagian penyiapan data...
-    # Baris awal di dalam tab3 tetap sama sampai bagian penyiapan data...
-    explainer = shap.Explainer(rf_model, X_df_row)
-    sv_row    = explainer(X_df_row)
+    import shap
+    explainer = shap.TreeExplainer(rf_model)
+    try:
+        sv_row = explainer.shap_values(X_df_row, check_additivity=False)
+    except TypeError:
+        sv_row = explainer.shap_values(X_df_row)
 
-    # Ambil nilai array secara aman dari objek Explanation
-    if hasattr(sv_row, "values"):
+    if isinstance(sv_row, list):
+        sv_single = np.array(sv_row[1]).flatten()
+    elif hasattr(sv_row, 'values'):
         sv_arr = sv_row.values
+        sv_single = sv_arr[0,:,1] if sv_arr.ndim==3 else sv_arr[0]
     else:
         sv_arr = np.array(sv_row)
-
-    # Format dimensi array menjadi 1D untuk grafik individual
-    if sv_arr.ndim == 3:
-        sv_single = sv_arr[0, :, 1]
-    elif sv_arr.ndim == 2:
-        sv_single = sv_arr[0]
-    else:
-        sv_single = sv_arr.flatten()
-  
+        sv_single = sv_arr[0,:,1] if sv_arr.ndim==3 else sv_arr[0]
 
     pred  = model_rf.predict(row)[0]
     proba = model_rf.predict_proba(row)[0]
@@ -182,8 +212,7 @@ with tab3:
     c1, c2 = st.columns([1, 2])
     with c1:
         st.markdown("**Data Mahasiswa:**")
-        row_display = row.T.rename(columns={row.index[0]: "Nilai"}).astype(str)
-        st.dataframe(row_display, use_container_width=True)
+        st.dataframe(row.T.rename(columns={row.index[0]:"Nilai"}), use_container_width=True)
         if pred == 1:
             st.success(f"✅ Prediksi: **Tepat Waktu** ({proba[1]*100:.1f}%)")
         else:
