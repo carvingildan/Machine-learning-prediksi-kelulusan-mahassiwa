@@ -13,7 +13,7 @@
 **NIM:** A11.2024.15822
 Universitas Dian Nuswantoro · Teknik Informatika
 
-🚀 **[Live Demo →](https://machine-learning-prediksi-kelulusan-mahassiwa-xscxhsnawej3hssl.streamlit.app)**
+🚀 **[Live Demo →](https://machine-learning-prediksi-kelulusan-mahassiwa-7wqhw5jgxvengfz6.streamlit.app/)**
 
 </div>
 
